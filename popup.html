@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>莱次狗辅助</title>
+	<meta charset="utf-8"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<script type="text/javascript" src="js/jquery-1.8.3.js"></script>
+	<script type="text/javascript" src="js/util.js"></script>
+	<script type="text/javascript" src="js/popup.js"></script>
+	<style>
+	body {
+		width: 500px;
+		min-height: 120px;
+	}
+	</style>
+</head>
+<body>
+	<h3>莱次狗辅助1.1.0</h3>
+	<button type="button" id="open">打开莱次狗页面</button><br/>
+	级别：<select id="rareDegree">
+		<option value="0">普通</option>
+		<option value="1" selected>稀有</option>
+		<option value="2">卓越</option>
+		<option value="3">史诗</option>
+		<option value="4">神话</option>
+		<option value="5">传说</option>
+	</select>
+	&nbsp;&nbsp;最大金额：<input id="amount" style="width:70px;" type="text" value="1000"/>
+	&nbsp;&nbsp;间隔时间（毫秒）：<input id="time" style="width:70px;" type="text" value="1500"/>
+	&nbsp;&nbsp;<button type="button" id="btn">开刷</button>
+	<p id="state"></p>
+	<p id="log"></p>
+</body>
+</html>
