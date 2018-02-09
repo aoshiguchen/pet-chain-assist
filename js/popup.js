@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
 		var amount = cache.amount || 1000;
 		var time = cache.time || 1500;
 		var btnName = cache.isRun?'停止':'开刷';
-		var state = cache.isRun?'已开始...':'shippingDetails.jsp';
+		var state = cache.isRun?'已开始...':'已停止...';
 		var log = cache.log || '';
 
 		$('#rareDegree').val(rareDegree);
@@ -105,7 +105,7 @@ function init(){
 			var amount = cache.amount || 1000;
 			var time = cache.time || 1500;
 			var btnName = cache.isRun?'停止':'开刷';
-			var state = cache.isRun?'已开始...':'shippingDetails.jsp';
+			var state = cache.isRun?'已开始...':'已停止...';
 			var log = cache.log || '';
 
 			$('#rareDegree').val(rareDegree);
