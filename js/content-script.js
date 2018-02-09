@@ -46,17 +46,14 @@ var cache = function(){
 
       var val = storage.getItem(k);
 
-      if(!val) return;
+      if(!val) return {};
       else return JSON.parse(val);
     },
-    setFlag: function(){
-    	this.set('flag',true);
+    getTaskCache: function(){
+    	return this.getJson('tackCache');
     },
-    isFlag: function(){
-    	return 'true' === this.get('flag');
-    },
-    rmFlag: function(){
-    	this.set('flag',false);
+    setTaskCache: function(data){
+    	this.setJson('tackCache',data);
     }
   };
 };
@@ -66,33 +63,6 @@ function timestamp(){
 	var date = new Date();
 	return date.getTime();
 }
-
-//获取验证码
-// function getAuthCode(){
-// 	var ret;
-// 	$.ajax({
-// 		type: "POST",
-// 		url: "https://pet-chain.baidu.com/data/captcha/gen",
-// 		async: false,
-// 		contentType: 'application/json',
-// 		data: JSON.stringify({
-// 			appId: config.appId,
-// 			requestId: timestamp(),
-// 			tpl: config.tpl
-// 		}),
-// 		dataType: "json",
-// 		success: function(data){
-// 			if(data && data.data && data.data.img){
-// 				ret = 'data:image/png;base64,' + data.data.img;
-// 			}
-// 			// if(data && data.data){
-// 			// 	ret =  data.data;
-// 			// }
-// 		}
-// 	});
-
-// 	return ret;
-// }
 
 //获取狗列表
 function getList(){
@@ -149,20 +119,17 @@ var degree = ['普通','稀有','卓越','史诗','神话','传说'];
 function purchase(data){
 
 	$(function(){
-		console.log('购买:',data.id,degree[data.rareDegree],data.amount);
+		log('购买:',data.id,degree[data.rareDegree],data.amount);
 		var e1 = jQuery.Event( "click");
 		$('.button').trigger(e1);
-		
-		//回车提交
-		// var e2 = jQuery.Event( "keyup", { keyCode: 13} );
 	});
 }
 
 function solve(condition){
 	var time = condition.time;
-	var count = 0;
+	var count = getCount();
 	var cb = function(){
-		if(config.isStop){
+		if(!isRun()){
 			return;
 		}
 		//防止前进、后退到购买页面还在刷
@@ -171,7 +138,10 @@ function solve(condition){
 		}
 
 		count++;
-		console.log('第' + count + '次刷新');
+		writeTaskCache({
+			count: count
+		});
+		log('第' + count + '次刷新');
 		var list = select(getList(),condition);
 		if(list && list.length > 0){
 			go1(list[0]);
@@ -183,72 +153,94 @@ function solve(condition){
 	setTimeout(cb,time);
 }
 
-// function init(){
+function writeTaskCache(json){
+	var taskCache = cache().getTaskCache();
 
-// 	if(document.location.href.indexOf('pet-chain.baidu.com/chain/detail') === -1){
-// 		cache().rmFlag();
-// 	}else{
-// 		cache().setFlag();
-// 	}
+	for(var key in json){
+		taskCache[key] = json[key];
+	}
 
-// 	if(!cache().isFlag()){
-// 		console.log('开刷...');
-// 		solve({
-// 			time: 1500,//间隔时间
-// 			rareDegree: 1, //级别：['普通','稀有','卓越','史诗','神话','传说'];
-// 			amount: 1000//最大金额
-// 		});
-// 	}else{
-// 		console.log('购买...');
-// 		purchase(cache().getJson('data'));
-// 	}
-// }
-
-// 向页面注入JS
-function injectCustomJs(jsPath){
-	jsPath = jsPath || 'js/inject.js';
-	var temp = document.createElement('script');
-	temp.setAttribute('type', 'text/javascript');
-	// 获得的地址类似：chrome-extension://ihcokhadfjfchaeagdoclpnjdiokfakg/js/inject.js
-	temp.src = chrome.extension.getURL(jsPath);
-	temp.onload = function()
-	{
-		// 放在页面不好看，执行完后移除掉
-		this.parentNode.removeChild(this);
-	};
-	document.body.appendChild(temp);
+	cache().setTaskCache(taskCache);
 }
 
-console.log('----',chrome.extension.getURL('js/inject.js'))
-loadScript(chrome.extension.getURL('js/inject.js'));
-loadScript('https://code.jquery.com/jquery-3.3.1.min.js');
-// loadScript('https://code.jquery.com/jquery-3.3.1.min.js',init);
+function log(){
+	var logInfo = Array.prototype.slice.apply(arguments);
+	console.log.apply(null,logInfo);
+	sendMessageToBackground({
+		type: 'log',
+		info: logInfo.join(',')
+	});
 
-// if (window.history && window.history.pushState) {
-// 	$(window).on('popstate', function () {
-// 		init();
-// 	});
-// }
+	writeTaskCache({
+		log: logInfo.join(',')
+	});
+}
 
+function isRun(){
+	var taskCache = cache().getTaskCache();
+
+	return taskCache.isRun;
+}
+
+function getCount(){
+	var taskCache = cache().getTaskCache();
+
+	return taskCache.count || 0;
+}
+
+// 主动发送消息给后台
+// 要演示此功能，请打开控制台主动执行sendMessageToBackground()
+function sendMessageToBackground(message) {
+	chrome.runtime.sendMessage({greeting: message});
+} 
+
+//接收消息
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
 
 	var data = JSON.parse(request);
 
 	if('solve' === data.call){
-		config.isStop = false;
-		console.log('开刷...',data.rareDegree,data.amount,data.time);
-		solve({
+		log('开刷...',data.rareDegree,data.amount,data.time);
+
+		var condition = {
+			isRun: true,
+			count: 0,
 			time: data.time,//间隔时间
 			rareDegree: data.rareDegree, //级别：['普通','稀有','卓越','史诗','神话','传说'];
 			amount: data.amount//最大金额
-		});
+		};
+
+		writeTaskCache(condition);
+
+		solve(condition);
 	}else if('stop' === data.call){
-		config.isStop = true;
-		console.log('停止...',);
+		writeTaskCache({
+			isRun: false
+		})
+		log('停止...',);
+	}else if('getCache' === data.call){
+		console.log('获取缓存');
+		sendResponse(cache().getTaskCache());
+		return;
 	}
 	
-
 	//通知popup.js成功
 	sendResponse('success');
 });
 
+loadScript(chrome.extension.getURL('js/inject.js'),function(){
+	loadScript('https://code.jquery.com/jquery-3.3.1.min.js',function(){
+		console.log('脚本加载完成!');
+
+		// sendMessageToBackground({
+		// 	type: 'cache',
+		// 	info: cache().getTaskCache()
+		// });
+
+		if(isRun()){
+			console.log('继续上次运行...');
+			var taskCache = cache().getTaskCache();
+			solve(taskCache);
+		}
+	});
+});

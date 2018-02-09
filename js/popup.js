@@ -15,6 +15,30 @@ function getCurrentTabId(callback){
 	});
 }
 
+// 监听来自content-script的消息
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
+	var data = JSON.parse(JSON.stringify(request)).greeting;
+	if('log' === data.type){
+		$('#log').html(data.info);
+	}else if('cache' === data.type){
+		//根据缓存初始化页面
+		var cache = data.info;
+
+		var rareDegree = cache.rareDegree || 1;
+		var amount = cache.amount || 1000;
+		var time = cache.time || 1500;
+		var btnName = cache.isRun?'停止':'开刷';
+		var state = cache.isRun?'已开始...':'shippingDetails.jsp';
+		var log = cache.log || '';
+
+		$('#rareDegree').val(rareDegree);
+		$('#amount').val(amount);
+		$('#time').val(time);
+		$('#btn').html(btnName);
+		$('#state').html(state);
+		$('#log').html(log);
+	}	
+});
 
 // 向content-script主动发送消息
 function sendMessageToContentScript(message, callback){
@@ -42,9 +66,9 @@ function start(){
 				amount: amount
 			}), (response) => {
 				if(response){
-					//消息发送失败
-				}else{
 					//消息发送成功
+				}else{
+					//消息发送失败
 				}
 			});
         }else{
@@ -62,14 +86,39 @@ function stop(){
 		call: 'stop'
 	}), (response) => {
 		if(response){
-			//消息发送失败
-		}else{
 			//消息发送成功
+		}else{
+			//消息发送失败
 		}
 	});
 }
 
 function init(){
+	sendMessageToContentScript(JSON.stringify({
+		call: 'getCache'
+	}), (response) => {
+		if(response){
+			//消息发送成功
+			var cache = response;
+			
+			var rareDegree = cache.rareDegree || 1;
+			var amount = cache.amount || 1000;
+			var time = cache.time || 1500;
+			var btnName = cache.isRun?'停止':'开刷';
+			var state = cache.isRun?'已开始...':'shippingDetails.jsp';
+			var log = cache.log || '';
+
+			$('#rareDegree').val(rareDegree);
+			$('#amount').val(amount);
+			$('#time').val(time);
+			$('#btn').html(btnName);
+			$('#state').html(state);
+			$('#log').html(log);
+		}else{
+			//消息发送失败
+		}
+	});
+
 	$('#btn').click(function(){
 		var name = $('#btn').html();
 		if(name === '开刷'){
@@ -85,7 +134,5 @@ function init(){
 }
 
 $(function() {
-
 	init();
-
 });
